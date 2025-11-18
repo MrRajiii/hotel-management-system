@@ -2,7 +2,7 @@
 
 import customtkinter
 from db_manager import DBManager
-from room_status_view import RoomStatusView
+from room_view import RoomStatusView
 from admin_panel_view import AdminPanelView
 from login_view import LoginView  # NEW IMPORT
 from tkinter import messagebox  # NEW IMPORT

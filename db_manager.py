@@ -4,9 +4,20 @@ from sqlalchemy import create_engine, Column, Integer, String, Float, Date, Bool
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base
 from datetime import date, datetime
 from sqlalchemy import func, or_
+import hashlib  # NEW IMPORT
 
 
 Base = declarative_base()
+
+
+# --- NEW: User Model ---
+class User(Base):
+    __tablename__ = 'users'
+    user_id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True, nullable=False)
+    password_hash = Column(String, nullable=False)  # Store hashed password
+    # Admin, Clerk, Housekeeping (for future use)
+    role = Column(String, default='Clerk')
 
 
 class Room(Base):
@@ -65,13 +76,52 @@ class Charge(Base):
 
 
 class DBManager:
+    # Adding User model to the DBManager so we can reference it easily
+    User = User
+
     def __init__(self, db_url='sqlite:///hotel_management.db'):
         self.engine = create_engine(db_url)
         Base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
-    # --- Room Status & Basic Room Methods ---
+    # --- NEW: User Authentication Methods ---
+
+    def hash_password(self, password):
+        """Hashes the password for secure storage."""
+        return hashlib.sha256(password.encode()).hexdigest()
+
+    def add_initial_user(self, username, password, role='Admin'):
+        """Adds a new user, checking for duplicates first."""
+        try:
+            if self.session.query(User).filter_by(username=username).first():
+                return False, "Username already exists."
+
+            hashed_password = self.hash_password(password)
+            new_user = User(
+                username=username,
+                password_hash=hashed_password,
+                role=role
+            )
+            self.session.add(new_user)
+            self.session.commit()
+            return True, "User created successfully."
+        except Exception as e:
+            self.session.rollback()
+            return False, f"Error creating user: {e}"
+
+    def check_credentials(self, username, password):
+        """Authenticates a user by checking the hashed password."""
+        user = self.session.query(User).filter_by(username=username).first()
+
+        if user:
+            # Hash the input password and compare it to the stored hash
+            if user.password_hash == self.hash_password(password):
+                return True, user.role
+
+        return False, None
+
+    # --- Room Status & Basic Room Methods --- (All previous methods remain the same)
 
     def get_room_status(self):
         rooms = self.session.query(Room).all()

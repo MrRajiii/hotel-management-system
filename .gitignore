@@ -1,0 +1,18 @@
+# Python virtual environments
+venv/
+.venv/
+
+# Python compiled files
+__pycache__/
+*.pyc
+
+# Sqlite database file (this should not be committed)
+*.db
+*.sqlite
+*.sqlite3
+
+# customtkinter theme settings (often local)
+.customtkinter_settings.json
+
+# Logs
+*.log
